@@ -1,0 +1,212 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model TaiKhoan {
+  id            Int      @id @default(autoincrement())
+  username      String   @unique
+  passwordHash  String
+  role          Role
+  employee      NhanVien? @relation(fields: [employeeId], references: [id])
+  employeeId    Int?
+  refreshTokens RefreshToken[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  expiresAt DateTime
+  user      TaiKhoan @relation(fields: [userId], references: [id])
+  userId    Int
+}
+
+enum Role {
+  ADMIN
+  HR
+  LANH_DAO_TRUONG_PHONG
+  KE_TOAN_LUONG
+  EMPLOYEE
+}
+
+enum EmployeeType {
+  BIEN_CHE
+  HOP_DONG
+}
+
+model PhongBan {
+  id        Int        @id @default(autoincrement())
+  name      String
+  parentId  Int?
+  children  PhongBan[] @relation("PhongBanToPhongBan", fields: [parentId], references: [id])
+  employees NhanVien[]
+}
+
+model ChucDanh {
+  id        Int        @id @default(autoincrement())
+  name      String
+  employees NhanVien[]
+}
+
+model BacLuong {
+  id        Int      @id @default(autoincrement())
+  bac       Int
+  heSo      Float
+  phuCap    Float @default(0)
+  baoHiem   Float @default(0)
+  bienChe   NhanVienBienChe[]
+}
+
+model CheDoPhucLoi {
+  id        Int     @id @default(autoincrement())
+  name      String
+  amount    Float
+  employees NhanVienHopDong[]
+}
+
+model NhanVien {
+  id                 Int                   @id @default(autoincrement())
+  hoTen              String
+  ngaySinh           DateTime
+  gioiTinh           String
+  cccd               String   @unique
+  loaiNhanVien       EmployeeType
+  phongBan           PhongBan @relation(fields: [phongBanId], references: [id])
+  phongBanId         Int
+  chucDanh           ChucDanh @relation(fields: [chucDanhId], references: [id])
+  chucDanhId         Int
+  email              String   @unique
+  phone              String
+  diaChi             String
+  ngayVaoLam         DateTime
+  status             String   @default("ACTIVE")
+  bienChe            NhanVienBienChe?
+  hopDong            NhanVienHopDong?
+  quaTrinhCongTac    QuaTrinhCongTac[]
+  phanCongCongViec   PhanCongCongViec[]
+  chamCongNgay       ChamCongNgay[]
+  chamCongThang      ChamCongThang[]
+  bangLuongThang     BangLuongThang[]
+  thanNhanGiaDinh    ThanNhanGiaDinh[]
+  trinhDoChuyenMon   TrinhDoChuyenMon?
+  chinhTriXaHoi      ChinhTriXaHoi?
+  account            TaiKhoan?
+}
+
+model NhanVienBienChe {
+  id           Int      @id
+  bacLuong     BacLuong @relation(fields: [bacLuongId], references: [id])
+  bacLuongId   Int
+  heSoLuong    Float
+  phuCap       Float @default(0)
+  baoHiem      Float @default(0)
+  nhanVien     NhanVien @relation(fields: [id], references: [id])
+}
+
+model NhanVienHopDong {
+  id             Int       @id
+  mucThoaThuan   Float
+  cheDoPhucLoi   CheDoPhucLoi? @relation(fields: [cheDoPhucLoiId], references: [id])
+  cheDoPhucLoiId Int?
+  nhanVien       NhanVien  @relation(fields: [id], references: [id])
+}
+
+model TrinhDoChuyenMon {
+  id         Int      @id @default(autoincrement())
+  trinhDo    String
+  chuyenNganh String
+  nhanVien   NhanVien @relation(fields: [nhanVienId], references: [id])
+  nhanVienId Int
+}
+
+model ChinhTriXaHoi {
+  id         Int      @id @default(autoincrement())
+  dangVien   Boolean
+  congDoan   Boolean
+  doanVien   Boolean
+  nhanVien   NhanVien @relation(fields: [nhanVienId], references: [id])
+  nhanVienId Int
+}
+
+model ThanNhanGiaDinh {
+  id         Int      @id @default(autoincrement())
+  hoTen      String
+  quanHe     String
+  ngaySinh   DateTime
+  nhanVien   NhanVien @relation(fields: [nhanVienId], references: [id])
+  nhanVienId Int
+}
+
+model NhiemVuCongViec {
+  id          Int                @id @default(autoincrement())
+  name        String
+  description String?
+  phanCong    PhanCongCongViec[]
+}
+
+model PhanCongCongViec {
+  id            Int              @id @default(autoincrement())
+  nhanVien      NhanVien         @relation(fields: [nhanVienId], references: [id])
+  nhanVienId    Int
+  nhiemVu       NhiemVuCongViec  @relation(fields: [nhiemVuId], references: [id])
+  nhiemVuId     Int
+  startDate     DateTime
+  endDate       DateTime?
+}
+
+model QuaTrinhCongTac {
+  id            Int      @id @default(autoincrement())
+  nhanVien      NhanVien @relation(fields: [nhanVienId], references: [id])
+  nhanVienId    Int
+  phongBan      String
+  chucDanh      String
+  tuNgay        DateTime
+  denNgay       DateTime?
+  ghiChu        String?
+  isDeleted     Boolean @default(false)
+}
+
+model ChamCongNgay {
+  id           Int      @id @default(autoincrement())
+  nhanVien     NhanVien @relation(fields: [nhanVienId], references: [id])
+  nhanVienId   Int
+  ngay         DateTime
+  status       String
+  note         String?
+  approved     Boolean @default(false)
+}
+
+model ChamCongThang {
+  id           Int      @id @default(autoincrement())
+  nhanVien     NhanVien @relation(fields: [nhanVienId], references: [id])
+  nhanVienId   Int
+  thang        Int
+  nam          Int
+  tongCong     Int
+  tongVang     Int
+  tongPhep     Int
+  generatedAt  DateTime @default(now())
+
+  @@unique([nhanVienId, thang, nam], name: "nhanVienId_thang_nam")
+}
+
+model BangLuongThang {
+  id            Int      @id @default(autoincrement())
+  nhanVien      NhanVien @relation(fields: [nhanVienId], references: [id])
+  nhanVienId    Int
+  thang         Int
+  nam           Int
+  luongCoBan    Float
+  phuCap        Float
+  baoHiem       Float
+  thucNhan      Float
+  generatedAt   DateTime @default(now())
+
+  @@unique([nhanVienId, thang, nam], name: "nhanVienId_thang_nam")
+}
